@@ -3,10 +3,12 @@
 #include <vector>
 #include <cmath> //For exponentiation
 #include <stack>
+#include <limits.h> //For INT_MIN 
 using namespace std;
 
 #define MAX_MASSES 100
 #define MONOISOTOPIC_PRECISION 3 //The number of decimal places the monoisotopic masses are stored at
+#define NINF INT_MIN
 
 /* Disclaimer: Much code reuse from Geeks for Geeks:
  * -longest path between any pair of vertices
@@ -30,6 +32,8 @@ class Graph{
 	stack <int> Stack; //Stores the topological sorting of the graph (Topmost elements of stack are parents).
 
 	void TopologicalSortUtil(int v, bool visited[]);
+
+	void LongestPathUtil(int v, int* max_dist, string* longest_peptide);
 
 public:
 	Graph(int V); //Constructor
@@ -74,7 +78,6 @@ void Graph::TopologicalSortUtil(int v, bool visited[]){
 
 	Stack.push(v);
 
-
 }
 
 void Graph::TopologicalSort(){
@@ -92,8 +95,51 @@ void Graph::TopologicalSort(){
 	
 }
 
+void Graph::LongestPathUtil(int v, int* max_dist, string* longest_peptide){
+	int dist[V];
+	string peptides[V];
+
+	for (int i=0;i<V;++i){
+	       	dist[i]=NINF;
+		peptides[i]="";
+	}
+	dist[v]=0;
+
+
+	vector <pair <int,char> >::iterator it;
+	stack <int> stack_copy=Stack; 
+
+	while(stack_copy.empty()==false){
+		int node=stack_copy.top();
+		if (dist[node]>NINF){
+			for (it=adj[node].begin();it<adj[node].end();++it){
+				if (dist[it->first]<dist[node]+1){ //1 because edges are unweighted here; all edge weights are 1.
+					dist[it->first]=dist[node]+1;
+					peptides[it->first]=peptides[node]+it->second;	
+				}
+			}	
+		}
+		stack_copy.pop();
+	}
+	for (int i=0;i<V;++i){
+		if (dist[i]>*max_dist){
+			*max_dist=dist[i];
+			*longest_peptide=peptides[i];
+			cout << peptides[i] << endl;
+		}
+	}
+}
+
 void Graph::LongestPath(){
-	continue;
+	int max_dist=0;
+	string longest_peptide="";
+
+	for (int v=0;v<V;++v){
+		LongestPathUtil(v,&max_dist,&longest_peptide);
+	}
+
+	cout << "Longest path: " <<max_dist << endl;
+	cout << "Longest peptide: " << longest_peptide << endl;
 }
 
 /* Part III:
@@ -142,6 +188,7 @@ int main(int argc, char* argv[]){
 			residue=residue_masses.find(tested_mass);
 
 			if (residue!=residue_masses.end()){
+				cout << "Residue found: " << residue->second << endl;
 				if (second_mass>first_mass) graph.addEdge(i,j,residue->second);
 				
 				else graph.addEdge(j,i,residue->second); 
@@ -149,6 +196,10 @@ int main(int argc, char* argv[]){
 		}
 	
 	}
+
+	graph.TopologicalSort();
+
+	graph.LongestPath();
 
 	return 0;
 }
