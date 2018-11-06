@@ -3,6 +3,7 @@
 #include <math.h>
 #include <sstream>
 #include <map>
+#include <vector>
 
 using namespace std;
 
@@ -30,4 +31,30 @@ map<double, char> load_monoisotopic_masses(string fname){
 	file.close();
 
 	return m;
+}
+
+vector <pair<double,char> > vectorial_load_monoisotopic_masses(string fname){
+	/*
+	 *Loads monoisotopic masses from file containing it
+	 */
+
+	vector < pair <double,char> > vec;
+
+	string line;
+	ifstream file(fname);
+
+	while(getline(file,line)){
+	
+		double weight;
+		char residue;
+
+		stringstream linestream(line);
+		linestream >> residue >> weight;		
+
+		vec.push_back(make_pair(weight,residue));
+	}
+
+	file.close();
+
+	return vec;
 }

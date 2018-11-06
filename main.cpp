@@ -9,6 +9,7 @@ using namespace std;
 #define MAX_MASSES 100
 #define MONOISOTOPIC_PRECISION 3 //The number of decimal places the monoisotopic masses are stored at
 #define NINF INT_MIN
+#define EPSILON 0.0001 //The 'error' about the monoisotopic mass tolerated for finding a residue.
 
 /* Disclaimer: Much code reuse from Geeks for Geeks:
  * -longest path between any pair of vertices
@@ -125,7 +126,7 @@ void Graph::LongestPathUtil(int v, int* max_dist, string* longest_peptide){
 		if (dist[i]>*max_dist){
 			*max_dist=dist[i];
 			*longest_peptide=peptides[i];
-			cout << peptides[i] << endl;
+			//cout << peptides[i] << endl;
 		}
 	}
 }
@@ -152,9 +153,9 @@ int main(int argc, char* argv[]){
 	/* Load monoisotopic amino acid masses */
 	string fname="monoisotopic_table.txt";
 
-	map<double, char> load_monoisotopic_masses(string);
+	vector <pair<double,char> > vectorial_load_monoisotopic_masses(string fname);
 
-	map<double, char> residue_masses=load_monoisotopic_masses(fname);
+	vector <pair<double,char> > residue_masses=vectorial_load_monoisotopic_masses(fname);
 
 
 
@@ -175,7 +176,8 @@ int main(int argc, char* argv[]){
 	 * */
 	int i,j;
 	double first_mass,second_mass,tested_mass;
-	map<double,char>::const_iterator residue;
+
+	vector <pair<double,char> >::const_iterator residue;
 
 	Graph graph(num_masses);
 
@@ -183,15 +185,18 @@ int main(int argc, char* argv[]){
 		first_mass=masses_array[i];
 		for (j=i+1;j<num_masses;++j){
 			second_mass=masses_array[j];
-			tested_mass=round(abs(second_mass-first_mass)*pow(10.0,MONOISOTOPIC_PRECISION))/pow(10.0,MONOISOTOPIC_PRECISION);
+			tested_mass=abs(second_mass-first_mass);
 
-			residue=residue_masses.find(tested_mass);
-
-			if (residue!=residue_masses.end()){
-				cout << "Residue found: " << residue->second << endl;
-				if (second_mass>first_mass) graph.addEdge(i,j,residue->second);
+			for (residue=residue_masses.begin();residue<residue_masses.end(); ++residue){
+				if (abs(tested_mass-residue->first)<EPSILON) {
 				
-				else graph.addEdge(j,i,residue->second); 
+					//cout << "Residue found: " << residue->second << endl;
+					if (second_mass>first_mass) graph.addEdge(i,j,residue->second);
+					
+					else graph.addEdge(j,i,residue->second); 
+
+					break; //Shouldn't have any residues below EPSILON apart in mass.
+				}
 			}
 		}
 	
