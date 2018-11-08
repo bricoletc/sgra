@@ -32,6 +32,8 @@ class Graph{
 
 	stack <int> Stack; //Stores the topological sorting of the graph (Topmost elements of stack are parents).
 
+	void addEdge(int u, int v, char residue);
+
 	void TopologicalSortUtil(int v, bool visited[]);
 
 	void LongestPathUtil(int v, int* max_dist, string* longest_peptide);
@@ -39,7 +41,7 @@ class Graph{
 public:
 	Graph(int V); //Constructor
 
-	void addEdge(int u, int v, char residue);
+	void Populate(double masses_array[],vector <pair <double,char> > residue_masses);
 
 	void TopologicalSort();
 
@@ -60,6 +62,38 @@ Graph::Graph(int V){
 
 void Graph::addEdge(int u, int v, char residue){
 	adj[u].push_back(make_pair(v,residue));
+}
+
+void Graph::Populate(double masses_array[],vector <pair <double,char> > residue_masses){
+	/*Populate the graph with valid residues
+	 * Residues are edges between two mass peaks.
+	 * */
+
+	int i,j;
+	double first_mass,second_mass,tested_mass;
+
+	vector <pair<double,char> >::const_iterator residue;
+
+	for (i=0;i<V-1;++i){
+		first_mass=masses_array[i];
+		for (j=i+1;j<V;++j){
+			second_mass=masses_array[j];
+			tested_mass=abs(second_mass-first_mass);
+
+			for (residue=residue_masses.begin();residue<residue_masses.end(); ++residue){
+				if (abs(tested_mass-residue->first)<EPSILON) {
+				
+					//cout << "Residue found: " << residue->second << endl;
+					if (second_mass>first_mass) this->addEdge(i,j,residue->second);
+					
+					else this->addEdge(j,i,residue->second); 
+
+					break; //Shouldn't have any residues below EPSILON apart in mass.
+				}
+			}
+		}
+	
+	}
 }
 
 void Graph::TopologicalSortUtil(int v, bool visited[]){
@@ -171,36 +205,11 @@ int main(int argc, char* argv[]){
 		masses_array[num_masses++]=mass;	
 	}
 
-	/*Populate the graph with valid residues
-	 * Residues are edges between two mass peaks.
-	 * */
-	int i,j;
-	double first_mass,second_mass,tested_mass;
-
-	vector <pair<double,char> >::const_iterator residue;
 
 	Graph graph(num_masses);
 
-	for (i=0;i<num_masses-1;++i){
-		first_mass=masses_array[i];
-		for (j=i+1;j<num_masses;++j){
-			second_mass=masses_array[j];
-			tested_mass=abs(second_mass-first_mass);
+	graph.Populate(masses_array,residue_masses);
 
-			for (residue=residue_masses.begin();residue<residue_masses.end(); ++residue){
-				if (abs(tested_mass-residue->first)<EPSILON) {
-				
-					//cout << "Residue found: " << residue->second << endl;
-					if (second_mass>first_mass) graph.addEdge(i,j,residue->second);
-					
-					else graph.addEdge(j,i,residue->second); 
-
-					break; //Shouldn't have any residues below EPSILON apart in mass.
-				}
-			}
-		}
-	
-	}
 
 	graph.TopologicalSort();
 
